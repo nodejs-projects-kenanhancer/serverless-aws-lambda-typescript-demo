@@ -52,7 +52,7 @@ functions:
     handler: src/handlers/signIn.handle
     events:
       - http:
-          method: get
+          method: post
           path: signIn
   signOut:
     handler: src/handlers/signOut.handle
@@ -82,13 +82,13 @@ functions:
     handler: src/handlers/forgotPassword.handle
     events:
       - http:
-          method: get
+          method: post
           path: forgotPassword
 
 resources:
   Resources:
     CognitoUserPool:
-      Type: "AWS::Cognito::UserPool"
+      Type: AWS::Cognito::UserPool
       Properties:
         MfaConfiguration: OFF
         UserPoolName: my-user-pool
@@ -130,35 +130,35 @@ resources:
             RequireUppercase: true
         UserPoolName: ${self:service}-${self:provider.stage}
 
-    # Creates a federeated Identity pool
-    IdentityPool:
-      Type: "AWS::Cognito::IdentityPool"
-      Properties:
-        IdentityPoolName: $<self:service>Identity
-        AllowUnauthenticatedIdentities: true
-        CognitoIdentityProviders:
-          - ClientId:
-              Ref: UserPoolClient
-            ProviderName:
-              "Fn::GetAtt": [UserPool, ProviderName]
-        SupportedLoginProviders:
-          "graph.facebook.com": "xxxxxxxxxx"
-        OpenIdConnectProviderARNs:
-          - "arn:aws:iam::xxxxxxxxxxx:oidc-provider/accounts.google.com"
+    # # Creates a federeated Identity pool
+    # IdentityPool:
+    #   Type: AWS::Cognito::IdentityPool
+    #   Properties:
+    #     IdentityPoolName: $<self:service>Identity
+    #     AllowUnauthenticatedIdentities: true
+    #     CognitoIdentityProviders:
+    #       - ClientId:
+    #           Ref: UserPoolClient
+    #         ProviderName:
+    #           "Fn::GetAtt": [UserPool, ProviderName]
+    #     SupportedLoginProviders:
+    #       "graph.facebook.com": "xxxxxxxxxx"
+    #     OpenIdConnectProviderARNs:
+    #       - "arn:aws:iam::xxxxxxxxxxx:oidc-provider/accounts.google.com"
 
-    MyCognitoUserPoolClient:
-      Type: AWS::Cognito::UserPoolClient
-      Properties:
-        ClientName: ${self:service}-${self:provider.stage}-user-pool-client
-        UserPoolId:
-          Ref: MyUserpool
-        GenerateSecret: true
+    # MyCognitoUserPoolClient:
+    #   Type: AWS::Cognito::UserPoolClient
+    #   Properties:
+    #     ClientName: ${self:service}-${self:provider.stage}-user-pool-client
+    #     UserPoolId:
+    #       Ref: MyUserpool
+    #     GenerateSecret: true
 
-    # Creates a User Pool Client to be used by the identity pool
-    UserPoolClient:
-      Type: "AWS::Cognito::UserPoolClient"
-      Properties:
-        ClientName: $<self:service>-client
-        GenerateSecret: false
-        UserPoolId:
-          Ref: UserPool
+    # # Creates a User Pool Client to be used by the identity pool
+    # UserPoolClient:
+    #   Type: AWS::Cognito::UserPoolClient
+    #   Properties:
+    #     ClientName: $<self:service>-client
+    #     GenerateSecret: false
+    #     UserPoolId:
+    #       Ref: UserPool
