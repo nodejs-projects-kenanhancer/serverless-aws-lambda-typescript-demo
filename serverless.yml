@@ -1,0 +1,164 @@
+service: serverless-aws-lambda-typescript-demo
+
+configValidationMode: warn
+
+frameworkVersion: ^2.54.0
+
+provider:
+  name: aws
+  region: eu-west-1
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  lambdaHashingVersion: 20201221
+
+  environment:
+    SERVERLESS_STAGE: ${self:provider.stage}
+    COGNITO_USER_POOL_ID: ""
+    COGNITO_CLIENT_ID: ""
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+  prune:
+    automatic: true
+    number: 1
+  dependsOn:
+    enabled: true
+    chains: 8
+  output:
+    file: serverless-output.json
+
+plugins:
+  - serverless-webpack
+  - serverless-prune-plugin
+  - serverless-dependson-plugin
+  - serverless-offline
+
+functions:
+  changePassword:
+    handler: src/handlers/changePassword.handle
+    events:
+      - http:
+          method: get
+          path: changePassword
+  resetPassword:
+    handler: src/handlers/resetPassword.handle
+    events:
+      - http:
+          method: get
+          path: resetPassword
+  signIn:
+    handler: src/handlers/signIn.handle
+    events:
+      - http:
+          method: get
+          path: signIn
+  signOut:
+    handler: src/handlers/signOut.handle
+    events:
+      - http:
+          method: get
+          path: signOut
+  signUp:
+    handler: src/handlers/signUp.handle
+    events:
+      - http:
+          method: get
+          path: signUp
+  resendConfirmationCode:
+    handler: src/handlers/resendConfirmationCode.handle
+    events:
+      - http:
+          method: get
+          path: resendConfirmationCode
+  confirmRegistration:
+    handler: src/handlers/confirmRegistration.handle
+    events:
+      - http:
+          method: get
+          path: confirmRegistration
+  forgotPassword:
+    handler: src/handlers/forgotPassword.handle
+    events:
+      - http:
+          method: get
+          path: forgotPassword
+
+resources:
+  Resources:
+    CognitoUserPool:
+      Type: "AWS::Cognito::UserPool"
+      Properties:
+        MfaConfiguration: OFF
+        UserPoolName: my-user-pool
+        UsernameAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 6
+            RequireLowercase: False
+            RequireNumbers: True
+            RequireSymbols: False
+            RequireUppercase: True
+
+    MyUserpool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: true
+          InviteMessageTemplate:
+            EmailMessage: Your username is {username} and temporary password is {####}.
+            EmailSubject: Your temporary password
+            SMSMessage: Your username is {username} and temporary password is {####}.
+          UnusedAccountValidityDays: 7
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        EmailConfiguration:
+          ReplyToEmailAddress: donotreply@domain.tld
+        EmailVerificationMessage: Your verification code is {####}.
+        EmailVerificationSubject: Your verification code
+        MfaConfiguration: OFF
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: false
+            RequireUppercase: true
+        UserPoolName: ${self:service}-${self:provider.stage}
+
+    # Creates a federeated Identity pool
+    IdentityPool:
+      Type: "AWS::Cognito::IdentityPool"
+      Properties:
+        IdentityPoolName: $<self:service>Identity
+        AllowUnauthenticatedIdentities: true
+        CognitoIdentityProviders:
+          - ClientId:
+              Ref: UserPoolClient
+            ProviderName:
+              "Fn::GetAtt": [UserPool, ProviderName]
+        SupportedLoginProviders:
+          "graph.facebook.com": "xxxxxxxxxx"
+        OpenIdConnectProviderARNs:
+          - "arn:aws:iam::xxxxxxxxxxx:oidc-provider/accounts.google.com"
+
+    MyCognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-${self:provider.stage}-user-pool-client
+        UserPoolId:
+          Ref: MyUserpool
+        GenerateSecret: true
+
+    # Creates a User Pool Client to be used by the identity pool
+    UserPoolClient:
+      Type: "AWS::Cognito::UserPoolClient"
+      Properties:
+        ClientName: $<self:service>-client
+        GenerateSecret: false
+        UserPoolId:
+          Ref: UserPool
