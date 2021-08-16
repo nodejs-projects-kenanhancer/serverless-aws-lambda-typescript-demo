@@ -7,8 +7,8 @@ export class AwsCognito {
 
     static instance: AwsCognito = new AwsCognito(config.aws.cognito.userPoolId, config.aws.cognito.clientId);
 
-    constructor(private userPoolId: string, private clientId: string) {
-        this.userPool = new CognitoUserPool({ UserPoolId: this.userPoolId, ClientId: this.clientId });
+    constructor(userPoolId: string, clientId: string) {
+        this.userPool = new CognitoUserPool({ UserPoolId: userPoolId, ClientId: clientId });
     }
 
     signUp(userName: string, password: string): Promise<string> {
